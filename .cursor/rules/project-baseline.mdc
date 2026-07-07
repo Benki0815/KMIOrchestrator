@@ -1,0 +1,69 @@
+---
+description: Project baseline rules for Cursor agent
+globs:
+alwaysApply: true
+---
+
+# Cursor Project Rules
+
+## Sprache & Stil
+- Antworte dem User immer auf Deutsch.
+- Code, Kommentare, Commit-Messages, Variablen, Funktionen, Klassen, Dateien und technische Bezeichner immer auf Englisch.
+- Dokumentationen, Planungen und Entscheidungsnotizen immer als Markdown unter `/docs` in deutscher Sprache.
+
+## Arbeitsweise
+- Arbeite standardmäßig klein, segmentiert und nachvollziehbar.
+- Teile größere Aufgaben in klare Teilpakete auf.
+- Führe keine stillen Großumbauten durch.
+- Erkläre vor größeren Änderungen kurz den Plan und setze ihn dann ohne erneute User-Interaktion um.
+- Prüfe geänderten Code auf offensichtliche Fehler, Inkonsistenzen und vergessene Imports.
+- Halte Änderungen so klein wie sinnvoll.
+- Bevorzuge minimale, robuste Lösungen gegenüber unnötiger Komplexität.
+
+## Dokumentation
+- Lege projektbezogene Dokumente unter `/docs` ab.
+- Wenn du Architektur, Abläufe, Regeln, Schnittstellen oder Pläne neu erstellst oder wesentlich änderst, aktualisiere die passenden Dateien unter `/docs`.
+- Wenn noch keine passende Datei existiert, lege eine sinnvoll benannte Markdown-Datei an.
+- Wenn Abschnitte abgeschlossen wurden, lege eine sinnvolle Dokumentation dazu an oder aktualisiere bestehende Dokumente entsprechend.
+
+## Workflow automation rules. MUST FOLLOW
+- Bei jeder Codeaenderung: Tagesversion um +1 erhoehen, Schema: v.<MM><DD>.<NNN> (Beispiel: 12. Aenderung am 08. Januar = v1.08.012). Versionsnummer im Frontend anpassen (package.json, footer.tsx). Die Tagesversionsnummer startet jeden Tag neu bei 001.
+- Beim Speichern von Codeaenderungen: Eine Extension sichert automatisch per SFTP auf das NAS. Das brauchst du nicht manuell zu tun.
+- Der User prueft Frontend-Aenderungen ausschliesslich ueber das NAS und niemals lokal. Nach sichtbaren Frontend-Aenderungen immer sicherstellen, dass der Stand auf dem NAS-Container ankommt; falls Hot-Reload nicht reicht, Frontend-Container auf dem NAS per SSH neu starten.
+- Container nur per SSH direkt auf dem NAS neu starten (lokal kein Docker verfuegbar).
+- Wenn ein Docker-Conteiner neu zu starten/builden ist: Fuehre das selbststaendig per SSH auf dem NAS aus.
+- Container nur neu bauen, wenn es fuer die aktuelle Aenderung wirklich erforderlich ist (kein unnoetiger Rebuild).
+- Container nur neu starten, wenn es fuer die aktuelle Aenderung wirklich erforderlich ist (kein unnoetiger Restart).
+- Erstellten Code auf Fehler pruefen und gefundene Fehler korrigieren.
+- Auf dem Benki-NAS3 werden bis auf Weiteres keine neuen Projekte angelegt.
+- Neue Projekte standardmäßig auf `DockerHost274` anlegen.
+- Für neue Projekte den projektspezifischen SSH-Host-Alias aus `/docs/cicd.md` verwenden.
+
+## Git-Workflow
+- Nach zusammenhängenden, persistenten Änderungen: erst Änderungen prüfen, dann einen klar benannten Commit erstellen.
+- Push nur dann ausführen, wenn ein Remote konfiguriert ist und der User es wünscht oder dies im aktuellen Projektstandard ausdrücklich vorgesehen ist.
+- Keine massenhaften Mini-Commits nur für Kleinständerungen.
+- Commit-Messages kurz, eindeutig und auf Englisch.
+
+## Git-Hygiene
+- Behalte den lokalen Git-Status im Blick.
+- Wenn sich im Workspace uncommittete, untracked, ungepushte oder sonstige lokale Abweichungen angesammelt haben, prüfe den Status und weise den User kurz darauf hin.
+- Empfiehl eine passende Aufräumstrategie, führe bereinigende Git-Aktionen erst nach Freigabe aus.
+- Behandle bewusst lokal verbleibende Dateien nicht automatisch als Fehler.
+- Vor größeren Änderungen, vor einem Commit und vor Deployment-/Sync-Aktionen prüfe kurz, ob der aktuelle Git-Status auffällige Altlasten enthält.
+
+## CI/CD
+- Projektbezogene CI/CD-Regeln sind in `/docs/cicd.md` definiert.
+- Wenn CI/CD-relevante Abläufe betroffen sind, halte dich daran.
+
+## NAS / SSH / Deployment
+- Nutze SSH nur dann aktiv, wenn es für Build, Restart, Deployment, Logprüfung oder Validierung wirklich nötig ist.
+- Keine unnötigen Container-Neustarts.
+- Keine unnötigen Rebuilds.
+- Arbeite niemals blind in fremden Verzeichnissen oder fremden Containern.
+
+## Schutzregeln
+- Niemals Datenbanken löschen.
+- Niemals produktive Daten löschen oder leeren, außer der User fordert das ausdrücklich an.
+- Keine geheimen Schlüssel, Tokens, Passwörter oder Zugangsdaten in Code, Doku oder Commits schreiben.
+- Keine destruktiven Terminalbefehle ohne erkennbare Notwendigkeit.

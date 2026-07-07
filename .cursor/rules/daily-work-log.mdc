@@ -1,0 +1,63 @@
+---
+description: Schreibt am Session-Ende ein lokales Tagebuch fuer den Obsidianisierer
+alwaysApply: true
+---
+
+# Tagesjournal (lokal) → TheBrain-Pipeline
+
+Am **Ende jeder Session** (letzte sinnvolle Taetigkeit abgeschlossen, User verabschiedet sich oder pausiert laenger) ein Journal-Markdown **lokal im Projekt** ablegen.
+
+## Zielpfad
+
+```
+<workspace-root>/.cursor/journal/YYYY-MM-DD.md
+```
+
+- Dateiname strikt `YYYY-MM-DD.md`
+- **Existiert die Datei schon** → an existierenden Inhalt anhaengen (neuer `## Session HH:MM`-Block am Ende), nicht ueberschreiben
+- Ordner `.cursor/journal/` bei Bedarf anlegen
+
+## Pflicht-Inhalt (kompakt, kein Roman)
+
+```markdown
+# Journal YYYY-MM-DD – <Projektname>
+
+## Session HH:MM – <Kurzthema>
+
+**Thema:** <1 Zeile>
+
+**Kernaussagen:**
+- <Faktum / Erkenntnis 1>
+- <Faktum / Erkenntnis 2>
+
+**Entscheidungen:**
+- <falls getroffen, sonst Abschnitt weglassen>
+
+**Konkrete Artefakte / Befehle / Pfade:**
+- `pfad/oder/befehl` – wofuer
+- <URLs, Container, Hostnames, IDs, Versionen>
+
+**Commits:** `<hash>` – <message>
+- <optional: nur wenn Commit/Push im gleichen Chat passiert ist, sonst Abschnitt weglassen>
+
+**Offen / Naechste Schritte:**
+- <falls vorhanden>
+```
+
+## Regeln zum Inhalt
+
+- **Kernaussagen statt Ablaufprotokoll.** Keine Schritt-fuer-Schritt-Tool-Erzaehlung.
+- **Maschinen-greifbares immer mit aufnehmen:** Befehle, Pfade, Container, Hostnames, Entity-IDs, Versionen.
+- **Quellen verlinken** wo sinnvoll.
+- **Auf Deutsch** schreiben.
+- **Max ~40 Zeilen pro Session-Block** — verdichten.
+- **Keine Secrets** (Keys, Passwoerter, Tokens).
+
+## Wann NICHT schreiben
+
+- Reine Smalltalk-/Lookup-Sessions ohne neue Erkenntnis
+- Wenn der User explizit „kein Logging diesmal" sagt
+
+## Pipeline-Hinweis
+
+Dieses Journal wird von `TheBrain/scripts/obsidian-sync.ps1` nach `Wissen/_sources/journal/<projekt>/` synchronisiert und dort vom Obsidianisierer konsolidiert. **Nicht** direkt nach TheBrain/Wissen schreiben.
