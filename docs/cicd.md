@@ -14,6 +14,16 @@ Diese Datei beschreibt projektspezifische Regeln für Build, Deploy, Versionieru
 - Commits klar und kurz auf Englisch formulieren.
 - Push nur bei vorhandenem Remote und wenn der Projektablauf dies vorsieht.
 
+## Env-Variablen (lokal, nicht committen)
+
+| Variable | Zweck |
+|----------|-------|
+| `SOFASCORE_RAPIDAPI_KEY` | SofaScore via RapidAPI (shared BallistiXG) |
+| `OPENROUTER_API_KEY` | LLM (neuer Key ausstehend) |
+| `SOFASCORE_QUOTA_PROTECT` | Quota-Schutz-Schwelle (default 500) |
+
+Siehe `.env.example` und `docs/integrations/`.
+
 ## Versionierung
 - Schema (wenn Frontend vorhanden): `v.<MM><DD>.<NNN>` — Tageszähler startet täglich bei 001.
 
