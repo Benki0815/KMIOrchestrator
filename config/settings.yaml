@@ -1,0 +1,12 @@
+# KMI Orchestrator – runtime config (mounted read-only into containers)
+# Persistent game data lives in ../data/
+
+budget_max_mio: 42.5
+positions:
+  TOR: 3
+  ABW: 7
+  MIT: 7
+  STU: 5
+league: BL
+host_port_frontend: 3050
+host_port_backend: 8050

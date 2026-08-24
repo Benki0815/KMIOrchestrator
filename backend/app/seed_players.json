@@ -1,0 +1,602 @@
+[
+  {
+    "id": "p1",
+    "name": "Harry Kane",
+    "shortName": "Kane",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "STU",
+    "marketValue": 8.5,
+    "xPoints": 198,
+    "pointsPerMio": 23.3,
+    "stabIndex": 4.2,
+    "ueberperformerScore": 12,
+    "form": [
+      12,
+      18,
+      15,
+      22,
+      14
+    ]
+  },
+  {
+    "id": "p2",
+    "name": "Michael Olise",
+    "shortName": "Olise",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "MIT",
+    "marketValue": 8,
+    "xPoints": 163,
+    "pointsPerMio": 20.4,
+    "stabIndex": 3.8,
+    "ueberperformerScore": 18,
+    "form": [
+      10,
+      14,
+      16,
+      19,
+      17
+    ]
+  },
+  {
+    "id": "p3",
+    "name": "Luis Díaz",
+    "shortName": "Díaz",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "STU",
+    "marketValue": 5.8,
+    "xPoints": 134,
+    "pointsPerMio": 23.1,
+    "stabIndex": 3.5,
+    "ueberperformerScore": 22,
+    "form": [
+      8,
+      11,
+      14,
+      16,
+      13
+    ]
+  },
+  {
+    "id": "p4",
+    "name": "Joshua Kimmich",
+    "shortName": "Kimmich",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "MIT",
+    "marketValue": 6,
+    "xPoints": 113,
+    "pointsPerMio": 18.8,
+    "stabIndex": 5.1,
+    "ueberperformerScore": 8,
+    "form": [
+      9,
+      10,
+      11,
+      10,
+      12
+    ]
+  },
+  {
+    "id": "p5",
+    "name": "Konrad Laimer",
+    "shortName": "Laimer",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "ABW",
+    "marketValue": 3,
+    "xPoints": 113,
+    "pointsPerMio": 37.7,
+    "stabIndex": 4.6,
+    "ueberperformerScore": 28,
+    "form": [
+      11,
+      9,
+      13,
+      12,
+      14
+    ]
+  },
+  {
+    "id": "p6",
+    "name": "Gregor Kobel",
+    "shortName": "Kobel",
+    "club": "Dortmund",
+    "clubCode": "BVB",
+    "position": "TOR",
+    "marketValue": 4.2,
+    "xPoints": 108,
+    "pointsPerMio": 25.7,
+    "stabIndex": 5.4,
+    "ueberperformerScore": 10,
+    "form": [
+      10,
+      12,
+      11,
+      9,
+      13
+    ]
+  },
+  {
+    "id": "p7",
+    "name": "Serhou Guirassy",
+    "shortName": "Guirassy",
+    "club": "Dortmund",
+    "clubCode": "BVB",
+    "position": "STU",
+    "marketValue": 6.5,
+    "xPoints": 142,
+    "pointsPerMio": 21.8,
+    "stabIndex": 3.2,
+    "ueberperformerScore": 25,
+    "form": [
+      7,
+      15,
+      20,
+      11,
+      16
+    ]
+  },
+  {
+    "id": "p8",
+    "name": "Nico Schlotterbeck",
+    "shortName": "Schlotterbeck",
+    "club": "Dortmund",
+    "clubCode": "BVB",
+    "position": "ABW",
+    "marketValue": 4,
+    "xPoints": 84,
+    "pointsPerMio": 21,
+    "stabIndex": 4.8,
+    "ueberperformerScore": 14,
+    "form": [
+      8,
+      9,
+      10,
+      11,
+      9
+    ]
+  },
+  {
+    "id": "p9",
+    "name": "Christoph Baumgartner",
+    "shortName": "Baumgartner",
+    "club": "Leipzig",
+    "clubCode": "RBL",
+    "position": "MIT",
+    "marketValue": 2.3,
+    "xPoints": 136,
+    "pointsPerMio": 59.1,
+    "stabIndex": 4,
+    "ueberperformerScore": 45,
+    "form": [
+      14,
+      12,
+      15,
+      13,
+      16
+    ]
+  },
+  {
+    "id": "p10",
+    "name": "Péter Gulácsi",
+    "shortName": "Gulácsi",
+    "club": "Leipzig",
+    "clubCode": "RBL",
+    "position": "TOR",
+    "marketValue": 3.4,
+    "xPoints": 119,
+    "pointsPerMio": 35,
+    "stabIndex": 5.2,
+    "ueberperformerScore": 20,
+    "form": [
+      11,
+      13,
+      12,
+      14,
+      10
+    ]
+  },
+  {
+    "id": "p11",
+    "name": "Yan Diomande",
+    "shortName": "Diomande",
+    "club": "Leipzig",
+    "clubCode": "RBL",
+    "position": "STU",
+    "marketValue": 1.6,
+    "xPoints": 101,
+    "pointsPerMio": 63.1,
+    "stabIndex": 2.8,
+    "ueberperformerScore": 62,
+    "form": [
+      6,
+      18,
+      9,
+      21,
+      12
+    ]
+  },
+  {
+    "id": "p12",
+    "name": "Alejandro Grimaldo",
+    "shortName": "Grimaldo",
+    "club": "Leverkusen",
+    "clubCode": "B04",
+    "position": "ABW",
+    "marketValue": 3.8,
+    "xPoints": 115,
+    "pointsPerMio": 30.3,
+    "stabIndex": 4.4,
+    "ueberperformerScore": 30,
+    "form": [
+      12,
+      11,
+      14,
+      13,
+      15
+    ]
+  },
+  {
+    "id": "p13",
+    "name": "Aleix García",
+    "shortName": "García",
+    "club": "Leverkusen",
+    "clubCode": "B04",
+    "position": "MIT",
+    "marketValue": 3.2,
+    "xPoints": 102,
+    "pointsPerMio": 31.9,
+    "stabIndex": 4.7,
+    "ueberperformerScore": 24,
+    "form": [
+      9,
+      11,
+      10,
+      12,
+      11
+    ]
+  },
+  {
+    "id": "p14",
+    "name": "Vladimír Coufal",
+    "shortName": "Coufal",
+    "club": "Hoffenheim",
+    "clubCode": "TSG",
+    "position": "ABW",
+    "marketValue": 1.8,
+    "xPoints": 113,
+    "pointsPerMio": 62.8,
+    "stabIndex": 4.9,
+    "ueberperformerScore": 55,
+    "form": [
+      13,
+      12,
+      11,
+      14,
+      12
+    ]
+  },
+  {
+    "id": "p15",
+    "name": "Grischa Prömel",
+    "shortName": "Prömel",
+    "club": "Hoffenheim",
+    "clubCode": "TSG",
+    "position": "MIT",
+    "marketValue": 2,
+    "xPoints": 110,
+    "pointsPerMio": 55,
+    "stabIndex": 4.5,
+    "ueberperformerScore": 48,
+    "form": [
+      10,
+      12,
+      11,
+      13,
+      14
+    ]
+  },
+  {
+    "id": "p16",
+    "name": "Wout Weghorst",
+    "shortName": "Weghorst",
+    "club": "Hoffenheim",
+    "clubCode": "TSG",
+    "position": "STU",
+    "marketValue": 2.4,
+    "xPoints": 94,
+    "pointsPerMio": 39.2,
+    "stabIndex": 3.6,
+    "ueberperformerScore": 33,
+    "form": [
+      8,
+      10,
+      12,
+      9,
+      11
+    ]
+  },
+  {
+    "id": "p17",
+    "name": "Said El Mala",
+    "shortName": "El Mala",
+    "club": "Köln",
+    "clubCode": "KOE",
+    "position": "MIT",
+    "marketValue": 1.7,
+    "xPoints": 119,
+    "pointsPerMio": 70,
+    "stabIndex": 3.9,
+    "ueberperformerScore": 70,
+    "form": [
+      15,
+      11,
+      16,
+      14,
+      13
+    ]
+  },
+  {
+    "id": "p18",
+    "name": "Marvin Schwäbe",
+    "shortName": "Schwäbe",
+    "club": "Köln",
+    "clubCode": "KOE",
+    "position": "TOR",
+    "marketValue": 2.8,
+    "xPoints": 96,
+    "pointsPerMio": 34.3,
+    "stabIndex": 5,
+    "ueberperformerScore": 16,
+    "form": [
+      9,
+      11,
+      10,
+      12,
+      11
+    ]
+  },
+  {
+    "id": "p19",
+    "name": "Jonathan Tah",
+    "shortName": "Tah",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "ABW",
+    "marketValue": 4.5,
+    "xPoints": 87,
+    "pointsPerMio": 19.3,
+    "stabIndex": 5.3,
+    "ueberperformerScore": 11,
+    "form": [
+      8,
+      9,
+      10,
+      9,
+      11
+    ]
+  },
+  {
+    "id": "p20",
+    "name": "Waldemar Anton",
+    "shortName": "Anton",
+    "club": "Dortmund",
+    "clubCode": "BVB",
+    "position": "ABW",
+    "marketValue": 3.5,
+    "xPoints": 90,
+    "pointsPerMio": 25.7,
+    "stabIndex": 5.1,
+    "ueberperformerScore": 19,
+    "form": [
+      10,
+      9,
+      11,
+      12,
+      10
+    ]
+  },
+  {
+    "id": "p21",
+    "name": "Ritsu Doan",
+    "shortName": "Doan",
+    "club": "Frankfurt",
+    "clubCode": "SGE",
+    "position": "MIT",
+    "marketValue": 2.6,
+    "xPoints": 89,
+    "pointsPerMio": 34.2,
+    "stabIndex": 3.7,
+    "ueberperformerScore": 27,
+    "form": [
+      7,
+      12,
+      10,
+      14,
+      11
+    ]
+  },
+  {
+    "id": "p22",
+    "name": "Jonathan Burkardt",
+    "shortName": "Burkardt",
+    "club": "Frankfurt",
+    "clubCode": "SGE",
+    "position": "STU",
+    "marketValue": 3,
+    "xPoints": 89,
+    "pointsPerMio": 29.7,
+    "stabIndex": 3.1,
+    "ueberperformerScore": 35,
+    "form": [
+      5,
+      16,
+      8,
+      18,
+      12
+    ]
+  },
+  {
+    "id": "p23",
+    "name": "Noah Atubolu",
+    "shortName": "Atubolu",
+    "club": "Freiburg",
+    "clubCode": "SCF",
+    "position": "TOR",
+    "marketValue": 2.6,
+    "xPoints": 81,
+    "pointsPerMio": 31.2,
+    "stabIndex": 4.8,
+    "ueberperformerScore": 21,
+    "form": [
+      8,
+      10,
+      9,
+      11,
+      10
+    ]
+  },
+  {
+    "id": "p24",
+    "name": "Vincenzo Grifo",
+    "shortName": "Grifo",
+    "club": "Freiburg",
+    "clubCode": "SCF",
+    "position": "MIT",
+    "marketValue": 2.8,
+    "xPoints": 80,
+    "pointsPerMio": 28.6,
+    "stabIndex": 4.1,
+    "ueberperformerScore": 23,
+    "form": [
+      9,
+      8,
+      12,
+      10,
+      11
+    ]
+  },
+  {
+    "id": "p25",
+    "name": "Matthias Ginter",
+    "shortName": "Ginter",
+    "club": "Freiburg",
+    "clubCode": "SCF",
+    "position": "ABW",
+    "marketValue": 2.2,
+    "xPoints": 91,
+    "pointsPerMio": 41.4,
+    "stabIndex": 5,
+    "ueberperformerScore": 26,
+    "form": [
+      10,
+      11,
+      9,
+      12,
+      11
+    ]
+  },
+  {
+    "id": "p26",
+    "name": "Danilo Doekhi",
+    "shortName": "Doekhi",
+    "club": "Union",
+    "clubCode": "FCU",
+    "position": "ABW",
+    "marketValue": 2.5,
+    "xPoints": 78,
+    "pointsPerMio": 31.2,
+    "stabIndex": 4.9,
+    "ueberperformerScore": 17,
+    "form": [
+      8,
+      9,
+      10,
+      9,
+      10
+    ]
+  },
+  {
+    "id": "p27",
+    "name": "Robin Gosens",
+    "shortName": "Gosens",
+    "club": "Union",
+    "clubCode": "FCU",
+    "position": "ABW",
+    "marketValue": 2,
+    "xPoints": 72,
+    "pointsPerMio": 36,
+    "stabIndex": 3.8,
+    "ueberperformerScore": 29,
+    "form": [
+      6,
+      11,
+      8,
+      13,
+      9
+    ]
+  },
+  {
+    "id": "p28",
+    "name": "Xavi Simons",
+    "shortName": "Simons",
+    "club": "Leipzig",
+    "clubCode": "RBL",
+    "position": "MIT",
+    "marketValue": 5.5,
+    "xPoints": 98,
+    "pointsPerMio": 17.8,
+    "stabIndex": 3.4,
+    "ueberperformerScore": 15,
+    "form": [
+      7,
+      10,
+      13,
+      9,
+      12
+    ]
+  },
+  {
+    "id": "p29",
+    "name": "Manuel Neuer",
+    "shortName": "Neuer",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "TOR",
+    "marketValue": 3.6,
+    "xPoints": 68,
+    "pointsPerMio": 18.9,
+    "stabIndex": 4,
+    "ueberperformerScore": 5,
+    "form": [
+      6,
+      8,
+      7,
+      9,
+      8
+    ]
+  },
+  {
+    "id": "p30",
+    "name": "Jamal Musiala",
+    "shortName": "Musiala",
+    "club": "Bayern",
+    "clubCode": "FCB",
+    "position": "MIT",
+    "marketValue": 7.5,
+    "xPoints": 120,
+    "pointsPerMio": 16,
+    "stabIndex": 3.6,
+    "ueberperformerScore": 13,
+    "form": [
+      11,
+      9,
+      14,
+      12,
+      15
+    ]
+  }
+]

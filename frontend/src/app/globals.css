@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --glass-bg: rgba(22, 27, 42, 0.6);
+  --glass-border: rgba(58, 73, 75, 0.3);
+  --cyan-glow: rgba(0, 219, 231, 0.15);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background-color: #050a18;
+  color: #dde2f6;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+  }
+
+  .glass-panel:hover {
+    border-color: rgba(0, 219, 231, 0.4);
+    box-shadow: 0 0 20px var(--cyan-glow);
+  }
+
+  .pitch-gradient {
+    background: radial-gradient(circle at center, #0f1c30 0%, #050a18 100%);
+  }
+
+  .pitch-lines {
+    background-image:
+      linear-gradient(to right, rgba(185, 202, 203, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(185, 202, 203, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .player-slot-active {
+    box-shadow: 0 0 10px rgba(0, 219, 231, 0.3);
+  }
+
+  .jersey-chip {
+    clip-path: polygon(
+      18% 6%,
+      34% 6%,
+      41% 0,
+      59% 0,
+      66% 6%,
+      82% 6%,
+      100% 30%,
+      88% 40%,
+      88% 100%,
+      12% 100%,
+      12% 40%,
+      0 30%
+    );
+    overflow: hidden;
+  }
+
+  .jersey-chip::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 7px;
+    border-radius: 0 0 8px 8px;
+    background: rgba(5, 10, 24, 0.72);
+  }
+
+  .jersey-chip::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    height: 2px;
+    opacity: 0.75;
+    background: var(--jersey-stripe, rgba(255, 255, 255, 0.32));
+  }
+
+  .jersey-number {
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 0 8px rgba(0, 0, 0, 0.45);
+  }
+
+  .jersey-club {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 32%),
+      linear-gradient(165deg, var(--jersey-primary), var(--jersey-secondary));
+  }
+
+  .jersey-tor {
+    background:
+      linear-gradient(165deg, rgba(245, 197, 66, 0.95), rgba(145, 110, 24, 0.9));
+  }
+
+  .jersey-abw {
+    background:
+      linear-gradient(165deg, rgba(80, 155, 255, 0.95), rgba(29, 76, 160, 0.9));
+  }
+
+  .jersey-mit {
+    background:
+      linear-gradient(165deg, rgba(37, 235, 255, 0.95), rgba(10, 106, 165, 0.9));
+  }
+
+  .jersey-stu {
+    background:
+      linear-gradient(165deg, rgba(232, 20, 60, 0.98), rgba(122, 8, 36, 0.94));
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a494b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[draggable="true"] {
+  -webkit-user-drag: element;
+  user-select: none;
+}
