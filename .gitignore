@@ -30,6 +30,7 @@ backend/.venv/
 /data/
 assets/Template Mockup/_extract/
 assets/Template Mockup/extracted/
+assets/Template Mockup/*.zip
 
 # OS / IDE
 .DS_Store

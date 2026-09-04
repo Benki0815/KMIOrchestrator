@@ -1,5 +1,6 @@
 import type { Player } from "./types";
 import type { PillTone } from "@/components/ui/Pill";
+import { lastSeasonDisplayPoints } from "./scoring";
 
 /** "Benotete Spiele" der Vorsaison — falls keine Baseline-Prognose vorliegt, Einsaetze als Fallback. */
 export function ratedGames(p: Player): number {
@@ -7,7 +8,7 @@ export function ratedGames(p: Player): number {
 }
 
 export function pointsPerMio(p: Player): number {
-  return p.marketValue > 0 ? (p.pointsLastSeason ?? 0) / p.marketValue : 0;
+  return p.marketValue > 0 ? lastSeasonDisplayPoints(p) / p.marketValue : 0;
 }
 
 /** Agent-Score (-1..1) auf 0..100 skaliert, wie im urspruenglichen Kicker-Scout-Dashboard. */

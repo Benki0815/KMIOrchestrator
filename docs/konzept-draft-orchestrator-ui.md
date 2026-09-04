@@ -1,6 +1,6 @@
 # Konzept – Draft Orchestrator (grafische Kader-Erstellung)
 
-> **Status:** Konzeptphase – kein Code  
+> **Status:** MVP live (Draft Room auf DockerHost274, Urlaubsstand `v.0904.001`) – dieses Dokument bleibt die Konzept-Referenz.  
 > **Referenz-UI:** Kicker Interactive „Aufstellung“ (Split-View: Spielfeld + Spielerliste)  
 > **Bezug:** [Konzept Gesamt](./konzept-kicker-managerspiel.md) · [Spielregeln](./spielregeln-kicker-ia.md)
 

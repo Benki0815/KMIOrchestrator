@@ -8,6 +8,7 @@ import { Pill, type PillTone } from "@/components/ui/Pill";
 import { StarRating } from "@/components/ui/StarRating";
 import { ClubCrestFilter } from "@/components/ui/ClubCrestFilter";
 import { InjuryBadge } from "@/components/ui/InjuryBadge";
+import { SquadVariantBadges } from "@/components/ui/SquadVariantBadges";
 import { sentimentTone } from "@/lib/playerStats";
 import {
   buildListColumns,
@@ -493,6 +494,7 @@ export function DashboardPanel() {
                                 </span>
                                 <span className="truncate text-sm font-bold text-on-surface">{player.name}</span>
                                 <InjuryBadge injury={player.injury} size={10} />
+                                <SquadVariantBadges playerId={player.id} size={14} />
                               </div>
                               <div className="truncate text-[10px] text-on-surface-variant">{player.club}</div>
                             </button>

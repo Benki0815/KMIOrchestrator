@@ -1,6 +1,6 @@
 {
   "name": "kmi-orchestrator-frontend",
-  "version": "0.0824.012",
+  "version": "0.0904.001",
   "private": true,
   "scripts": {
     "dev": "next dev",

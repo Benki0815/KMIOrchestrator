@@ -40,9 +40,10 @@ GET /api/player/{playerId}/image
 | `GET /api/player/{id}/attribute-overviews` | Skill-Attribute (Attacking, Defending, …) | 7 Tage |
 | `GET /api/player/{id}/events/last/0` | Form: Ratings, Goals, Assists, xG pro Spiel | 24 h (Matchday) |
 | `GET /api/player/{id}/statistics/seasons` | Verfügbare Saisons | 7 Tage |
-| `GET /api/player/{id}/unique-tournament/35/season/{seasonId}/statistics/overall` | **Saison-KPIs BL** | 24 h |
+| `GET /api/player/{id}/last-year-summary` | **Fallback für Saisonrating (wenn overall-Endpoint 404 liefert)** | 120 Tage |
+| `GET /api/player/{id}/unique-tournament/35/season/{seasonId}/statistics/overall` | Saison-KPIs BL (optional, bei kompatiblem Plan) | 24 h |
 | `GET /api/event/{eventId}/player/{playerId}/statistics` | Einzelspiel-Stats | permanent nach Spielende |
-| `GET /api/search/players/{name}` | Kicker→SofaScore Mapping | 30 Tage |
+| `GET /api/team/{teamId}/players` | Kicker→SofaScore Mapping (Roster-Pool) | 30 Tage |
 
 ### Liga / Spielplan (on demand)
 
@@ -115,11 +116,12 @@ function getPlayerSeasonKPIs(playerId):
 
 Kicker-CSV liefert Name + Verein, SofaScore braucht numerische `player.id`.
 
-**Strategie:**
-1. `GET /api/search/players/{name}` → Kandidaten
-2. Match auf `team.name` / Vereins-Kürzel (FCB, BVB, …)
-3. Ergebnis in `player_kicker_mapping` cachen
-4. Manuelles Override in UI bei Fehlmatch
+**Strategie (live implementiert):**
+1. `GET /api/unique-tournament/35/season/{sid}/standings/total` → Team-IDs
+2. `GET /api/team/{teamId}/players` je Team → Kandidaten-Pool
+3. Match auf `name + club` (Similarity-Score), Ergebnis in `player_kicker_mapping` cachen
+4. Für Ratings `GET /api/player/{id}/last-year-summary` und Mittelwert je `uniqueTournamentId=35` bilden
+5. Fallback: falls BL-Samples fehlen, Mittelwert über alle Event-Ratings im Last-Year-Summary
 
 ---
 
@@ -129,7 +131,7 @@ Kicker-CSV liefert Name + Verein, SofaScore braucht numerische `player.id`.
 |----------|-------------|------|
 | Draft-Baseline | Kicker-CSV + eigene XLSX | Nein |
 | Spieler-Bild | SofaScore image | Ja, gecacht |
-| Saison-KPIs (Rating, xG) | SofaScore season stats | Ja, gecacht |
+| Saison-KPIs (Rating) | SofaScore last-year summary | Ja, gecacht |
 | Verletzungen/News | LLM-Recherche | OpenRouter |
 | Spieltags-Prognose | XLSX SP01-34 + LLM-Adjust | Teilweise |
 

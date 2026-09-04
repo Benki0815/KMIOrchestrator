@@ -1,6 +1,6 @@
 # Activity-Log
 
-> Stand: 2026-08-24 · Version `v.0824.012`
+> Stand: 2026-09-04 · Version `v.0904.001`
 
 Persistentes Ereignisprotokoll aller relevanten Backend-Vorgänge. Anzeige im Portal unter **Log**.
 

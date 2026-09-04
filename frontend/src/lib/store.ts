@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { api } from "./api";
-import { defaultProjection, projectionForPlayer, projectionPoints, sanitizeProjection } from "./scoring";
+import { defaultProjection, lastSeasonDisplayPoints, projectionForPlayer, projectionPoints, sanitizeProjection } from "./scoring";
 import {
   benchSlotPositions,
   reconcileSquadPositions,
@@ -152,7 +152,7 @@ export function computeSquadMetrics(
       (pos) => positions[pos] === POSITION_LIMITS[pos]
     );
   const starterLastSeasonPoints = starterPlayers.reduce(
-    (sum, p) => sum + (p.pointsLastSeason ?? 0),
+    (sum, p) => sum + lastSeasonDisplayPoints(p),
     0
   );
   const starterProjectedPoints = starterPlayers.reduce((sum, p) => {
@@ -160,7 +160,7 @@ export function computeSquadMetrics(
     return sum + projectionPoints(p.position, projection);
   }, 0);
   const benchLastSeasonPoints = benchPlayers.reduce(
-    (sum, p) => sum + (p.pointsLastSeason ?? 0),
+    (sum, p) => sum + lastSeasonDisplayPoints(p),
     0
   );
   const benchProjectedPoints = benchPlayers.reduce((sum, p) => {

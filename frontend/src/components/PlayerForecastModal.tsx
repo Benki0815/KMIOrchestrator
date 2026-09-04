@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { useActiveTab, useOrchestratorStore } from "@/lib/store";
+import { StarRating } from "@/components/ui/StarRating";
 import {
   gradePointsPerGame,
+  lastSeasonDisplayPoints,
+  lastYearProjection,
   MAX_MATCHES_PER_SEASON,
   playerGoldenTarget,
   pointsBreakdown,
@@ -12,6 +15,7 @@ import {
   projectionPoints,
   projectionsEqual,
   sanitizeProjection,
+  validAverageGrade,
 } from "@/lib/scoring";
 import type { PlayerProjection, Position } from "@/lib/types";
 import { POSITION_GOAL_POINTS, POSITION_LABELS } from "@/lib/types";
@@ -97,6 +101,8 @@ export function PlayerForecastModal() {
   const picker = useOrchestratorStore((s) => s.alternativePicker);
   const setVariantSwapIn = useOrchestratorStore((s) => s.setVariantSwapIn);
   const closeAlternativePicker = useOrchestratorStore((s) => s.closeAlternativePicker);
+  const togglePlayerFavorite = useOrchestratorStore((s) => s.togglePlayerFavorite);
+  const setPlayerRating = useOrchestratorStore((s) => s.setPlayerRating);
   const activeTab = useActiveTab();
 
   const player = selectedPlayerId
@@ -121,18 +127,7 @@ export function PlayerForecastModal() {
 
   const baseline: PlayerProjection = useMemo(() => {
     if (!player) return fallbackProjection;
-    return sanitizeProjection(player.position, player.baselineProjection ?? {
-      starts: player.appearancesLastSeason ?? 0,
-      subApps: 0,
-      ratedGames: player.appearancesLastSeason ?? 0,
-      goals: player.goalsLastSeason ?? 0,
-      assists: player.assistsLastSeason ?? 0,
-      motm: 0,
-      yellowRed: 0,
-      redCards: 0,
-      cleanSheets: 0,
-      avgGrade: player.averageGrade ?? 3.5,
-    });
+    return lastYearProjection(player);
   }, [fallbackProjection, player]);
 
   const projection = useMemo(() => {
@@ -162,7 +157,7 @@ export function PlayerForecastModal() {
   const goldenTarget = playerGoldenTarget(player.position);
   const goldenDelta = points - goldenTarget;
   const isGk = player.position === "TOR";
-  const noLeagueGrades = !player.leagueTag && !player.averageGrade;
+  const noLeagueGrades = !player.leagueTag && validAverageGrade(player.averageGrade) == null;
   const pickingForVariant = !!picker && player.id !== picker.swapOutId;
   const maxBar = Math.max(
     1,
@@ -178,9 +173,30 @@ export function PlayerForecastModal() {
               {player.clubCode}
             </div>
             <div>
-              <h3 className="font-display text-2xl font-black text-on-surface">
-                {player.shortName.toUpperCase()}
-              </h3>
+              <div className="flex flex-wrap items-center gap-3">
+                <h3 className="font-display text-2xl font-black text-on-surface">
+                  {player.shortName.toUpperCase()}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => togglePlayerFavorite(player.id)}
+                  title={player.isFavorite ? "Favorit entfernen" : "Als Favorit markieren"}
+                  className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-high"
+                  aria-label={player.isFavorite ? "Favorit entfernen" : "Als Favorit markieren"}
+                  aria-pressed={!!player.isFavorite}
+                >
+                  <Heart
+                    className="h-5 w-5"
+                    fill={player.isFavorite ? "#e8143c" : "none"}
+                    color={player.isFavorite ? "#e8143c" : "#8a9099"}
+                  />
+                </button>
+                <StarRating
+                  value={player.userRating}
+                  size={16}
+                  onChange={(v) => setPlayerRating(player.id, v)}
+                />
+              </div>
               <p className="text-sm text-on-surface-variant">
                 {POSITION_LABELS[player.position]} · {player.club} · {formatMio(player.marketValue)}
               </p>
@@ -235,9 +251,13 @@ export function PlayerForecastModal() {
                 {BREAKDOWN_ROWS.filter((r) => !r.onlyGk || isGk).map((row) => {
                   const value = baselineBreakdown[row.key] as number;
                   const width = Math.max(4, (Math.abs(value) / maxBar) * 100);
+                  const lastYearValue = lastYearStat(player, baseline, row.key);
                   return (
                     <div key={row.key} className="flex items-center gap-2">
-                      <span className="w-32 shrink-0 text-xs text-on-surface-variant">{row.label}</span>
+                      <span className="w-28 shrink-0 text-xs text-on-surface-variant">{row.label}</span>
+                      <span className="w-10 shrink-0 text-right font-mono text-xs font-bold text-on-surface">
+                        {lastYearValue}
+                      </span>
                       <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container-low">
                         <div className={`h-full rounded-full ${row.color}`} style={{ width: `${width}%` }} />
                       </div>
@@ -259,9 +279,17 @@ export function PlayerForecastModal() {
               <span className="font-mono text-[11px] uppercase tracking-wider text-on-surface-variant">
                 Gesamt 25/26
               </span>
-              <span className="font-mono text-2xl font-black text-on-surface">
-                {player.pointsLastSeason ?? 0}
-              </span>
+              <div className="text-right">
+                <span className="font-mono text-2xl font-black text-on-surface">
+                  {lastSeasonDisplayPoints(player)}
+                </span>
+                {Math.abs(baselineBreakdown.total - lastSeasonDisplayPoints(player)) >= 15 ? (
+                  <div className="font-mono text-[10px] text-on-surface-variant">
+                    Stats-Modell {baselineBreakdown.total}
+                    {lastSeasonDisplayPoints(player) === 0 ? " · keine Kicker-CSV" : " · CSV weicht ab"}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -278,7 +306,7 @@ export function PlayerForecastModal() {
               <div className="rounded-lg border border-outline-variant/20 bg-surface-container-low p-2 text-center">
                 <div className="font-mono text-[9px] uppercase text-on-surface-variant">Note</div>
                 <div className="font-mono text-lg font-bold text-on-surface">
-                  {player.averageGrade ? player.averageGrade.toFixed(2) : "–"}
+                  {validAverageGrade(player.averageGrade)?.toFixed(2) ?? "–"}
                 </div>
               </div>
             </div>
@@ -426,7 +454,7 @@ export function PlayerForecastModal() {
           )}
           <button
             type="button"
-            onClick={() => setDraft(sanitizeProjection(player.position, baseline))}
+            onClick={() => setDraft(lastYearProjection(player))}
             title="Lädt die Vorjahreswerte in die Regler - die Prognose oben aktualisiert sich sofort, das Fenster bleibt offen."
             className="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface"
           >
@@ -489,6 +517,35 @@ export function PlayerForecastModal() {
       </div>
     </div>
   );
+}
+
+function lastYearStat(
+  player: { averageGrade?: number | null },
+  baseline: PlayerProjection,
+  key: string
+): string {
+  switch (key) {
+    case "starts":
+      return String(baseline.starts);
+    case "subApps":
+      return String(baseline.subApps);
+    case "notePoints": {
+      const grade = validAverageGrade(player.averageGrade);
+      return grade != null ? grade.toFixed(2) : "–";
+    }
+    case "goals":
+      return String(baseline.goals);
+    case "assists":
+      return String(baseline.assists);
+    case "motm":
+      return String(baseline.motm);
+    case "cards":
+      return String(baseline.yellowRed + baseline.redCards);
+    case "cleanSheets":
+      return String(baseline.cleanSheets);
+    default:
+      return "–";
+  }
 }
 
 function BreakdownLine({

@@ -6,10 +6,17 @@ import { useActiveTab, useOrchestratorStore, useSquadMetrics } from "@/lib/store
 import type { Player, Position } from "@/lib/types";
 import { POSITION_LABELS } from "@/lib/types";
 import { benchSlotPositions } from "@/lib/formation";
-import { projectionPoints } from "@/lib/scoring";
+import {
+  lastSeasonDisplayPoints,
+  lastYearProjection,
+  listXPoints,
+  projectionPoints,
+  viewDisplayPoints,
+} from "@/lib/scoring";
 import { formatMio } from "@/lib/utils";
 import { allowDrop, clearDrag, readDragPayload, useActiveDrag, writeDragSlot } from "@/lib/dnd";
 import { InjuryBadge } from "@/components/ui/InjuryBadge";
+import { SquadVariantBadges } from "@/components/ui/SquadVariantBadges";
 
 const GROUP_ORDER: Position[] = ["STU", "MIT", "ABW", "TOR"];
 
@@ -43,7 +50,11 @@ function BankRow({
 
   const projection = tab.projections[player.id] ?? player.baselineProjection;
   const projPoints = projection ? projectionPoints(player.position, projection) : 0;
-  const points = pointsView === "saison" ? player.pointsLastSeason ?? 0 : projPoints;
+  const points = viewDisplayPoints(
+    lastSeasonDisplayPoints(player),
+    projPoints || listXPoints(tab, player),
+    pointsView
+  );
 
   return (
     <div
@@ -79,6 +90,7 @@ function BankRow({
           <div className="flex items-center gap-1 truncate text-sm font-bold text-on-surface">
             <span className="truncate">{player.name}</span>
             <InjuryBadge injury={player.injury} size={10} />
+            <SquadVariantBadges playerId={player.id} size={14} />
           </div>
           <div className="truncate text-[10px] text-on-surface-variant">{player.club}</div>
         </button>
@@ -117,7 +129,7 @@ function BankRow({
             type="button"
             title="Auf Vorjahr zuruecksetzen"
             onMouseDown={(e) => e.stopPropagation()}
-            onClick={() => player.baselineProjection && setProjection(player.id, player.baselineProjection)}
+            onClick={() => setProjection(player.id, lastYearProjection(player))}
             className="rounded p-1 text-on-surface-variant opacity-0 hover:text-primary-fixed group-hover:opacity-100"
           >
             <RotateCcw className="h-3 w-3" />

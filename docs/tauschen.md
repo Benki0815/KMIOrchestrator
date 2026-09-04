@@ -1,6 +1,6 @@
 # Tauschen
 
-> Stand: 2026-08-24
+> Stand: 2026-09-04 · Version `v.0904.001`
 
 ## Ablauf
 
@@ -11,6 +11,8 @@
 5. **Variante übernehmen** schreibt die gesetzten Tausche direkt in den Kader und wechselt zurück zu Entwerfen.
 
 `Präsentieren` bleibt im Code (Raus/Rein, `applySwapPlan`), ist in der Navi aber ausgeblendet.
+
+Spieler, die in mehreren Kader-Tabs stehen, zeigen **A/B/C-Badges** auf Pitch-Chip, Bank-Zeile und in Pool-/Listen-Spalten (`SquadVariantBadges`).
 
 ## Regeln
 

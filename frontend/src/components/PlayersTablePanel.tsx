@@ -16,6 +16,7 @@ import {
 import { formatMio } from "@/lib/utils";
 import { ClubCrestFilter } from "@/components/ui/ClubCrestFilter";
 import { InjuryBadge } from "@/components/ui/InjuryBadge";
+import { SquadVariantBadges } from "@/components/ui/SquadVariantBadges";
 
 const POSITIONS: Array<"ALL" | Position> = ["ALL", "TOR", "ABW", "MIT", "STU"];
 
@@ -274,6 +275,7 @@ export function PlayersTablePanel() {
                               {player.name}
                             </span>
                             <InjuryBadge injury={player.injury} size={10} />
+                            <SquadVariantBadges playerId={player.id} size={14} />
                             {player.valuePick && <span title="Value-Pick" className="text-emerald-300">◆</span>}
                           </div>
                           <div className="truncate text-[10px] text-on-surface-variant">{player.club}</div>

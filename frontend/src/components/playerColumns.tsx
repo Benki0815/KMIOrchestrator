@@ -5,7 +5,13 @@ import { BUDGET_MAX, POSITION_LABELS, POSITION_LIMITS } from "@/lib/types";
 import { formatDateDe, formatMio } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 import { pointsPerMio, ratedGames, scoreScaled } from "@/lib/playerStats";
-import { hasAcceptedPrognose, listXPoints } from "@/lib/scoring";
+import {
+  hasAcceptedPrognose,
+  lastSeasonDisplayPoints,
+  listXPoints,
+  preferredDisplayPoints,
+  validAverageGrade,
+} from "@/lib/scoring";
 
 export type ColKey =
   | "name"
@@ -48,9 +54,21 @@ export const PLAYER_COLUMNS: ColumnDef[] = [
   {
     key: "pkt",
     label: "Pkt 25/26",
-    title: "Punkte Vorsaison",
-    sortValue: (p) => p.pointsLastSeason ?? 0,
-    render: (p) => <Pill tone="pink">{p.pointsLastSeason ?? 0}</Pill>,
+    title: "Punkte Vorsaison — ohne Kicker-Jahr: xPunkte",
+    sortValue: (p) => lastSeasonDisplayPoints(p) || Math.round(p.xPoints),
+    render: (p) => {
+      const last = lastSeasonDisplayPoints(p);
+      if (last) return <Pill tone="pink">{last}</Pill>;
+      const xp = Math.round(p.xPoints);
+      if (xp) {
+        return (
+          <Pill tone="blue" title="kein Pkt 25/26 · xPunkte">
+            {xp}
+          </Pill>
+        );
+      }
+      return <Pill tone="pink">0</Pill>;
+    },
   },
   {
     key: "pktMio",
@@ -90,8 +108,10 @@ export const PLAYER_COLUMNS: ColumnDef[] = [
     key: "note",
     label: "Note",
     title: "Ø-Note Vorsaison",
-    sortValue: (p) => p.averageGrade ?? 0,
-    render: (p) => <Pill tone="amber">{p.averageGrade == null ? "–" : p.averageGrade.toFixed(2)}</Pill>,
+    sortValue: (p) => validAverageGrade(p.averageGrade) ?? 9.99,
+    render: (p) => (
+      <Pill tone="amber">{validAverageGrade(p.averageGrade)?.toFixed(2) ?? "–"}</Pill>
+    ),
   },
   {
     key: "score",
@@ -132,7 +152,7 @@ export const PLAYER_COLUMNS: ColumnDef[] = [
   {
     key: "uber",
     label: "ÜberPerf",
-    title: "Überperformer-Score",
+    title: "Deal-Score: Scouts × Preis × Überzeugung. 90 = Mega-Deal, 99 alle paar Jahre",
     sortValue: (p) => p.ueberperformerScore,
     render: (p) => <Pill tone="pink">{p.ueberperformerScore.toFixed(1)}</Pill>,
   },
@@ -157,13 +177,19 @@ export function buildListColumns(tab: SquadTab): ColumnDef[] {
     if (c.key !== "xpkt") return c;
     return {
       ...c,
-      title: `xPunkte für "${tab.label}": übernommene Prognose (pink) oder Modell (blau)`,
-      sortValue: (p) => listXPoints(tab, p),
+      title: `xPunkte für "${tab.label}": übernommene Prognose (pink) oder Modell (blau); sonst Pkt 25/26`,
+      sortValue: (p) => preferredDisplayPoints(tab, p),
       render: (p) => {
         const custom = hasAcceptedPrognose(tab, p.id);
+        const xp = listXPoints(tab, p);
+        const shown = preferredDisplayPoints(tab, p);
+        const fromLastSeason = !xp && shown !== 0;
         return (
-          <Pill tone={custom ? "pink" : "blue"} title={custom ? "Deine Prognose" : "Modell"}>
-            {listXPoints(tab, p)}
+          <Pill
+            tone={custom ? "pink" : fromLastSeason ? "pink" : "blue"}
+            title={custom ? "Deine Prognose" : fromLastSeason ? "Pkt 25/26 (keine xPunkte)" : "Modell"}
+          >
+            {shown}
           </Pill>
         );
       },

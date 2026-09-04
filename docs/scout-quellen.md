@@ -1,6 +1,6 @@
 # Scout-Quellen (kicker-scout → KMI)
 
-> Stand: 2026-08-24 · Version `v.0824.012`
+> Stand: 2026-09-04 · Version `v.0904.001`
 
 Analysen, Values und Kernaussagen kommen nicht aus dem KMI-Repo selbst, sondern
 aus **kicker-scout** (`c:\Dev\privateTemp\kicker-scout`). Der tägliche Job

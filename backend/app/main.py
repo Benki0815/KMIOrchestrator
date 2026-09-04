@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
+import math
 import os
 import sqlite3
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -15,7 +19,7 @@ from .activity_log import list_events, log_event, safe_refresh_activity_log
 from .database import DB_PATH, backup_db, get_connection, init_db
 from .sofascore_sync import sync_sofascore_ratings
 
-APP_VERSION = "v.0824.009"
+APP_VERSION = "v.0904.001"
 
 Position = Literal["TOR", "ABW", "MIT", "STU"]
 RiskProfile = Literal["floor", "balanced", "aggressive", "ueberperformer"]
@@ -82,6 +86,11 @@ _INGEST_ASSIST_CAP = {"TOR": 4, "ABW": 14, "MIT": 24, "STU": 18}
 # 23.08.2026). Defense-in-depth zusaetzlich zum Clamp in kicker-scout/push_to_kmi.py.
 _MARKET_VALUE_SENTINEL_THRESHOLD = 50.0
 _MARKET_VALUE_FALLBACK = 0.5
+
+# Offizielle Kicker-Managerspiel-CSV der laufenden BL-Saison. Ingest upsertet nur;
+# ohne diesen Overlay bleiben Abgaenge (nicht mehr in der CSV) ewig active.
+_KICKER_BL_CSV_URL = "https://www.kicker-libero.de/api/sportsdata/v1/players-details/se-k00012026.csv"
+_OFFICIAL_SQUAD_MIN_SIZE = 400
 
 app = FastAPI(title="KMI Orchestrator API", version=APP_VERSION)
 
@@ -365,6 +374,79 @@ def _is_current_bundesliga_club(club: str | None, club_code: str | None = None) 
     return code in CURRENT_BUNDESLIGA_CODES
 
 
+def _csv_market_value(raw: str | None) -> float:
+    try:
+        value = float(raw or 0) / 1_000_000
+    except (TypeError, ValueError):
+        return _MARKET_VALUE_FALLBACK
+    if value >= _MARKET_VALUE_SENTINEL_THRESHOLD:
+        return _MARKET_VALUE_FALLBACK
+    return round(max(value, 0.0), 3)
+
+
+def _fetch_official_bl_squad() -> dict[str, dict[str, Any]] | None:
+    """Aktueller BL-Kader aus der öffentlichen Kicker-CSV. None = Fetch unbrauchbar."""
+    try:
+        with urllib.request.urlopen(_KICKER_BL_CSV_URL, timeout=20) as resp:
+            text = resp.read().decode("utf-8-sig")
+    except Exception:  # noqa: BLE001
+        return None
+    squad: dict[str, dict[str, Any]] = {}
+    for row in csv.DictReader(io.StringIO(text), delimiter=";"):
+        pid = (row.get("ID") or "").strip()
+        if not pid:
+            continue
+        squad[pid] = {
+            "name": (row.get("Angezeigter Name") or "").strip(),
+            "club": (row.get("Verein") or "").strip(),
+            "price": _csv_market_value(row.get("Marktwert")),
+        }
+    if len(squad) < _OFFICIAL_SQUAD_MIN_SIZE:
+        return None
+    return squad
+
+
+def _apply_official_squad_overlay(conn: sqlite3.Connection) -> dict[str, Any]:
+    """CSV ist Kader-Quelle: Club/Preis refreshen, alle nicht mehr gelisteten Spieler deaktivieren.
+
+    Scout-Seed/Push upserten nur und lassen Abgaenge (Palhinha, Wasinski, Ghosts wie Goretzka)
+    sonst ewig active, solange der alte Verein noch BL ist.
+    """
+    squad = _fetch_official_bl_squad()
+    if not squad:
+        return {"ok": False, "reason": "csv_unavailable_or_too_small"}
+    now = datetime.now(timezone.utc).isoformat()
+    refreshed = 0
+    deactivated: list[str] = []
+    rows = conn.execute("SELECT player_id, name, active FROM players").fetchall()
+    for row in rows:
+        pid = row["player_id"]
+        info = squad.get(pid)
+        if info:
+            club = info["club"] or None
+            conn.execute(
+                """UPDATE players
+                   SET club = ?, club_code = ?, market_value = ?, active = 1, updated_at = ?
+                   WHERE player_id = ?""",
+                (club, _club_code(club), info["price"], now, pid),
+            )
+            refreshed += 1
+            continue
+        if row["active"]:
+            conn.execute(
+                "UPDATE players SET active = 0, updated_at = ? WHERE player_id = ?",
+                (now, pid),
+            )
+            deactivated.append(row["name"])
+    return {
+        "ok": True,
+        "official": len(squad),
+        "refreshed": refreshed,
+        "deactivated": len(deactivated),
+        "deactivatedSample": deactivated[:25],
+    }
+
+
 def _normalize_position(position: str | None) -> Position:
     if not position:
         return "MIT"
@@ -421,17 +503,131 @@ def _projection_points(position: str, projection: dict[str, Any]) -> float:
     return float(total)
 
 
+def _valid_kicker_grade(raw: Any) -> float | None:
+    """Kicker-Noten sind 1.00–6.00. 0.0 in der CSV heisst 'keine Benotung'."""
+    if raw is None:
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if value < 1.0 or value > 6.0:
+        return None
+    return round(value, 2)
+
+
+def _is_neutral_grade(value: float | None) -> bool:
+    return value is None or abs(value - 3.5) < 0.001
+
+
+def _csv_points_are_stale(
+    stored: int | None,
+    starts: int,
+    reconstructed: float,
+    points_source: str | None = None,
+    goals: int = 0,
+    assists: int = 0,
+    position: str = "MIT",
+) -> bool:
+    """2L-Archiv-CSV hat oft 2024/25-Punkte, Stats kommen aus 2025/26 (Curda 62 vs 32 Starts).
+
+    BL-CSV nie ueberschreiben: Bankspieler liegen unter dem Startelf-Boden, weil viele
+    Einsaetze Einwechslungen sind (Hoeler 86 bei 33 Apps ist plausibel, nicht stale).
+    CSV 0 = keine Kicker-Saison (Transfer/Ausland), nicht rekonstruieren.
+    2L nur ersetzen, wenn selbst All-Subs-Minimum (2 Pkt/Einsatz + Tore + Vorlagen)
+    unmoeglich ist.
+    """
+    if stored is None or stored <= 0:
+        return False
+    src = (points_source or "").strip().upper()
+    if src == "BL":
+        return False
+    starts = max(0, int(starts or 0))
+    goal_pts = _PROJECTION_GOAL_POINTS.get(position, 4)
+    all_subs_floor = starts * 2 + int(goals or 0) * goal_pts + int(assists or 0) * 2
+    if src == "2L" and starts >= 10 and stored < all_subs_floor - 15:
+        return True
+    if src == "2L" and starts <= 8 and stored > reconstructed + 40:
+        return True
+    return False
+
+
+def _effective_last_season_points(
+    stored: int | None,
+    position: str,
+    baseline: dict[str, Any],
+    points_source: str | None = None,
+    goals: int = 0,
+    assists: int = 0,
+) -> tuple[int, bool]:
+    """Liefert (Punkte, stale). BL-CSV und CSV=0 bleiben stehen. 2L-Stale wird rekonstruiert."""
+    recon = _projection_points(position, {**baseline, "avgGrade": 3.5})
+    starts = int(baseline.get("starts") or 0)
+    if _csv_points_are_stale(stored, starts, recon, points_source, goals, assists, position):
+        return int(round(recon)), True
+    if stored is None:
+        return 0, False
+    return int(stored), False
+
+
+def _overlay_grade_on_baseline(
+    baseline: dict[str, Any], average_grade: float | None
+) -> dict[str, Any]:
+    """Stale baselines often keep avgGrade=3.5 because CSV 0.0 was treated as a
+    real note. Overlay the official kicker grade when the stored value is still
+    the 3.5-neutral default. Manual overrides (Ramaj 3.26 etc.) stay untouched."""
+    if average_grade is None or not isinstance(baseline, dict):
+        return baseline if isinstance(baseline, dict) else {}
+    stored = _valid_kicker_grade(baseline.get("avgGrade"))
+    if stored is not None and not _is_neutral_grade(stored):
+        return baseline
+    return {**baseline, "avgGrade": average_grade}
+
+
 def _derive_stab_index(average_grade: float | None) -> float:
-    if average_grade is None or average_grade <= 0:
+    grade = _valid_kicker_grade(average_grade)
+    if grade is None:
         return 3.5
-    return round(_clamp((6.2 - average_grade) * 1.4, 1.5, 5.8), 2)
+    return round(_clamp((6.2 - grade) * 1.4, 1.5, 5.8), 2)
 
 
-def _derive_ueberperformer(agent_score: float | None, value_pick: bool) -> float:
-    base = 50.0 + ((agent_score or 0.0) * 40.0)
-    if value_pick:
-        base += 10
-    return round(_clamp(base, 0, 99), 1)
+def _derive_ueberperformer(
+    agent_score: float | None,
+    market_value: float | None,
+    x_points: float | None,
+    mention_count: int = 0,
+) -> float:
+    """Deal-Score 0-99: Scouts × billig × wie oft die Scouts ihn wirklich pushen.
+
+    Skala (absichtlich streng): 50 = kein Signal, ~80 = sehr interessant,
+    Anfang 90 = Mega-Deal (billig + Scouts flippen + mehrere Quellen),
+    99 nur alle paar Jahre (Megatalent zum Schleuderpreis, breiter Hype).
+    Ein einzelnes positives Mention reicht nicht fuer 90 — sonst waeren
+    Dutzende No-Names bei agent_score=1.0 schon „Megadeals“.
+    """
+    n = max(0, int(mention_count))
+    score = float(agent_score or 0.0)
+    if n == 0 or score <= 0:
+        if score < 0:
+            return round(_clamp(50.0 + score * 28.0, 8.0, 50.0), 1)
+        return 50.0
+
+    scout = score**1.15
+    price = float(market_value or 0.0)
+    if price <= 0 or price >= 50:
+        cheap = 0.20
+    else:
+        cheap = _clamp(math.exp(-0.52 * max(0.0, price - 0.5)), 0.0, 1.0)
+
+    ppm = (float(x_points or 0.0) / price) if price > 0.2 else 0.0
+    ppm = min(ppm, 72.0)
+    eff = _clamp((ppm - 18.0) / 54.0, 0.0, 1.0)
+    conv = 1.0 - math.exp(-n / 5.0)
+    inner = 0.50 + 0.50 * max(eff, conv * 0.25)
+    deal = (scout**0.40) * (cheap**0.34) * (conv**0.18) * (inner**0.08)
+    raw = 50.0 + 49.5 * (deal**1.32)
+    ceiling = min(99.0, 70.0 + 32.0 * (1.0 - math.exp(-(n - 1) / 4.8)))
+    return round(_clamp(min(raw, ceiling), 8.0, 99.0), 1)
 
 
 def _derive_form(x_points: float, agent_score: float | None) -> list[float]:
@@ -451,7 +647,8 @@ def _default_projection_for_player(player: dict[str, Any]) -> dict[str, Any]:
     starts = int(_clamp(float(player.get("appearancesLastSeason") or 0), 0, 34))
     goals = int(player.get("goalsLastSeason") or 0)
     assists = int(player.get("assistsLastSeason") or 0)
-    avg_grade = float(player.get("averageGrade") or 3.5)
+    grade = _valid_kicker_grade(player.get("averageGrade"))
+    avg_grade = grade if grade is not None else 3.5
     clean_sheets = int(_clamp(float(player.get("metadata", {}).get("cleanSheetsLastSeason", 0)), 0, 20))
     return {
         "starts": starts,
@@ -613,6 +810,27 @@ def _row_to_player(row: sqlite3.Row) -> dict[str, Any]:
     if not league_tag and _is_current_bundesliga_club(row["club"], row["club_code"]):
         league_tag = "BUNDESLIGA"
     last_mention_date = _latest_mention_date(mentions)
+    average_grade = _valid_kicker_grade(row["average_grade"])
+    if not isinstance(baseline, dict):
+        baseline = {}
+    # Neutral rekonstruieren, bevor eine Archiv-Note aus der falschen Saison draufkommt.
+    baseline_for_stale = {**baseline, "avgGrade": 3.5}
+    points_last, stale_csv = _effective_last_season_points(
+        row["points_last_season"],
+        row["position"],
+        baseline_for_stale,
+        points_source,
+        int(row["goals_last_season"] or 0),
+        int(row["assists_last_season"] or 0),
+    )
+    if stale_csv:
+        average_grade = None
+        baseline = {**baseline, "avgGrade": 3.5}
+    else:
+        baseline = _overlay_grade_on_baseline(baseline, average_grade)
+    x_points = _projection_points(row["position"], baseline)
+    price = float(row["market_value"] or 0.0)
+    points_per_mio = round(x_points / price, 2) if price > 0 else 0.0
     return {
         "id": row["player_id"],
         "name": row["name"],
@@ -621,13 +839,18 @@ def _row_to_player(row: sqlite3.Row) -> dict[str, Any]:
         "clubCode": row["club_code"],
         "position": row["position"],
         "marketValue": row["market_value"],
-        "xPoints": row["x_points"],
-        "pointsPerMio": row["points_per_mio"],
+        "xPoints": x_points,
+        "pointsPerMio": points_per_mio,
         "stabIndex": row["stab_index"],
-        "ueberperformerScore": row["ueberperformer_score"],
+        "ueberperformerScore": _derive_ueberperformer(
+            row["agent_score"],
+            row["market_value"],
+            x_points,
+            row["mentions_count"] or len(mentions),
+        ),
         "form": form if isinstance(form, list) else [],
-        "pointsLastSeason": row["points_last_season"],
-        "averageGrade": row["average_grade"],
+        "pointsLastSeason": points_last,
+        "averageGrade": average_grade,
         "goalsLastSeason": row["goals_last_season"],
         "assistsLastSeason": row["assists_last_season"],
         "appearancesLastSeason": row["appearances_last_season"],
@@ -645,7 +868,7 @@ def _row_to_player(row: sqlite3.Row) -> dict[str, Any]:
         "sofascoreSeasonRating": row["sofascore_season_rating"],
         "mentionsCount": row["mentions_count"] or 0,
         "mentions": mentions if isinstance(mentions, list) else [],
-        "baselineProjection": baseline if isinstance(baseline, dict) else {},
+        "baselineProjection": baseline,
         "leagueTag": league_tag,
         "injury": _safe_json(row["injury_json"] if "injury_json" in row.keys() else None),
         "lastMentionDate": last_mention_date,
@@ -714,9 +937,9 @@ def _convert_scout_row(row: sqlite3.Row, mentions: list[dict[str, Any]]) -> dict
         "marketValue": market_value,
         "pointsPerMio": 0,
         "stabIndex": _derive_stab_index(row["average_grade"]),
-        "ueberperformerScore": _derive_ueberperformer(row["agent_score"], bool(row["value_pick"])),
+        "ueberperformerScore": 0.0,
         "pointsLastSeason": points_last,
-        "averageGrade": row["average_grade"],
+        "averageGrade": _valid_kicker_grade(row["average_grade"]),
         "goalsLastSeason": row["goals_last_season"] or 0,
         "assistsLastSeason": row["assists_last_season"] or 0,
         "appearancesLastSeason": row["appearances_last_season"] or 0,
@@ -740,11 +963,26 @@ def _convert_scout_row(row: sqlite3.Row, mentions: list[dict[str, Any]]) -> dict
         },
     }
     baseline = _default_projection_for_player(payload)
+    points_last, stale_csv = _effective_last_season_points(
+        points_last,
+        position,
+        {**baseline, "avgGrade": 3.5},
+        (row["points_source"] or "").strip().upper() or None,
+        int(row["goals_last_season"] or 0),
+        int(row["assists_last_season"] or 0),
+    )
+    if stale_csv:
+        payload["averageGrade"] = None
+        payload["pointsLastSeason"] = points_last
+        baseline = {**baseline, "avgGrade": 3.5}
     payload["baselineProjection"] = baseline
     x_points = _projection_points(position, baseline)
     payload["xPoints"] = x_points
     payload["form"] = _derive_form(x_points, row["agent_score"])
     payload["pointsPerMio"] = _ensure_points_per_mio(payload)
+    payload["ueberperformerScore"] = _derive_ueberperformer(
+        row["agent_score"], market_value, x_points, len(mentions)
+    )
     return payload
 
 
@@ -786,6 +1024,7 @@ def ingest_from_scout_db(path: Path) -> dict[str, Any]:
                 payload["mentionsTotal"] = len(mentions)
                 _upsert_player(conn, payload)
                 imported += 1
+            overlay = _apply_official_squad_overlay(conn)
             conn.execute("INSERT OR REPLACE INTO system_metrics (key, value_json, updated_at) VALUES (?, ?, ?)", (
                 "last_ingest",
                 json.dumps(
@@ -793,6 +1032,7 @@ def ingest_from_scout_db(path: Path) -> dict[str, Any]:
                         "source": "kicker_scout_db",
                         "path": str(path),
                         "players": imported,
+                        "squadOverlay": overlay,
                         "at": datetime.now(timezone.utc).isoformat(),
                     },
                     ensure_ascii=False,
@@ -800,7 +1040,7 @@ def ingest_from_scout_db(path: Path) -> dict[str, Any]:
                 datetime.now(timezone.utc).isoformat(),
             ))
             conn.commit()
-    return {"imported": imported, "source": str(path)}
+    return {"imported": imported, "source": str(path), "squadOverlay": overlay}
 
 
 def _convert_ingest_player(player: IngestPlayerIn) -> dict[str, Any]:
@@ -815,11 +1055,9 @@ def _convert_ingest_player(player: IngestPlayerIn) -> dict[str, Any]:
         "marketValue": float(player.marketValue or 0.0),
         "pointsPerMio": player.pointsPerMio or 0,
         "stabIndex": player.stabIndex if player.stabIndex is not None else _derive_stab_index(player.averageGrade),
-        "ueberperformerScore": player.ueberperformerScore
-        if player.ueberperformerScore is not None
-        else _derive_ueberperformer(player.agentScore, player.valuePick),
+        "ueberperformerScore": 0.0,
         "pointsLastSeason": player.pointsLastSeason,
-        "averageGrade": player.averageGrade,
+        "averageGrade": _valid_kicker_grade(player.averageGrade),
         "goalsLastSeason": player.goalsLastSeason,
         "assistsLastSeason": player.assistsLastSeason,
         "appearancesLastSeason": player.appearancesLastSeason,
@@ -840,6 +1078,20 @@ def _convert_ingest_player(player: IngestPlayerIn) -> dict[str, Any]:
         if player.baselineProjection
         else _default_projection_for_player(payload)
     )
+    points_last, stale_csv = _effective_last_season_points(
+        payload.get("pointsLastSeason"),
+        position,
+        {**baseline, "avgGrade": 3.5},
+        (player.metadata or {}).get("pointsSource") if isinstance(player.metadata, dict) else None,
+        int(player.goalsLastSeason or 0),
+        int(player.assistsLastSeason or 0),
+    )
+    if stale_csv:
+        payload["averageGrade"] = None
+        payload["pointsLastSeason"] = points_last
+        baseline = {**baseline, "avgGrade": 3.5}
+    else:
+        baseline = _overlay_grade_on_baseline(baseline, payload.get("averageGrade"))
     payload["baselineProjection"] = baseline
     # xPunkte werden aus derselben Prognose (baselineProjection) berechnet wie im Frontend
     # (Spieler-Details-Modal, Spielfeld, Bank) - player.xPoints ist nur ein expliziter
@@ -848,6 +1100,10 @@ def _convert_ingest_player(player: IngestPlayerIn) -> dict[str, Any]:
     payload["xPoints"] = x_points
     payload["form"] = player.form or _derive_form(x_points, player.agentScore)
     payload["pointsPerMio"] = _ensure_points_per_mio(payload) if not payload["pointsPerMio"] else payload["pointsPerMio"]
+    mention_n = player.mentionsTotal if player.mentionsTotal is not None else len(player.mentions)
+    payload["ueberperformerScore"] = _derive_ueberperformer(
+        player.agentScore, payload["marketValue"], x_points, mention_n
+    )
     return payload
 
 
@@ -1188,6 +1444,31 @@ def ingest_scout_db(path: str | None = None):
     return {"ok": True, **result}
 
 
+@app.post("/api/admin/ingest/refresh-squad")
+def refresh_official_squad():
+    """Deaktiviert Abgaenge und refresht Club/Preis direkt aus der aktuellen Kicker-CSV."""
+    with get_connection() as conn:
+        overlay = _apply_official_squad_overlay(conn)
+        if overlay.get("ok"):
+            overlay_msg = (
+                f"CSV-Overlay: {overlay.get('refreshed', 0)} aktualisiert, "
+                f"{overlay.get('deactivated', 0)} deaktiviert"
+            )
+        else:
+            overlay_msg = f"CSV-Overlay übersprungen ({overlay.get('reason')})"
+        log_event(
+            conn,
+            status="ok" if overlay.get("ok") else "warn",
+            category="ingest",
+            title="Kader-Overlay",
+            message=overlay_msg,
+            details=overlay,
+        )
+        safe_refresh_activity_log(conn)
+        conn.commit()
+    return {"ok": bool(overlay.get("ok")), **overlay}
+
+
 @app.post("/api/admin/ingest/payload")
 def ingest_payload(payload: IngestPayload):
     if payload.replace:
@@ -1199,6 +1480,7 @@ def ingest_payload(payload: IngestPayload):
         for player in payload.players:
             _upsert_player(conn, _convert_ingest_player(player))
             imported += 1
+        overlay = _apply_official_squad_overlay(conn)
         conn.execute(
             "INSERT OR REPLACE INTO system_metrics (key, value_json, updated_at) VALUES (?, ?, ?)",
             (
@@ -1208,6 +1490,7 @@ def ingest_payload(payload: IngestPayload):
                         "source": payload.source,
                         "players": imported,
                         "replace": payload.replace,
+                        "squadOverlay": overlay,
                         "at": datetime.now(timezone.utc).isoformat(),
                     },
                     ensure_ascii=False,
@@ -1221,11 +1504,16 @@ def ingest_payload(payload: IngestPayload):
             category="ingest",
             title="Spieler-Ingest",
             message=f"Spielerdaten übernommen: {imported} Spieler (Quelle: {payload.source})",
-            details={"source": payload.source, "imported": imported, "replace": payload.replace},
+            details={
+                "source": payload.source,
+                "imported": imported,
+                "replace": payload.replace,
+                "squadOverlay": overlay,
+            },
         )
         safe_refresh_activity_log(conn)
         conn.commit()
-    return {"ok": True, "imported": imported}
+    return {"ok": True, "imported": imported, "squadOverlay": overlay}
 
 
 @app.get("/api/teams", response_model=list[TeamOut])

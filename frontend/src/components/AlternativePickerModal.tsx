@@ -11,6 +11,7 @@ import { RangeSlider } from "@/components/ui/RangeSlider";
 import { StarRating } from "@/components/ui/StarRating";
 import { Pill } from "@/components/ui/Pill";
 import { InjuryBadge } from "@/components/ui/InjuryBadge";
+import { SquadVariantBadges } from "@/components/ui/SquadVariantBadges";
 import {
   buildListColumns,
   leagueLabel,
@@ -101,6 +102,7 @@ function PlayerNameCell({
           {player.shortName}
         </span>
         <InjuryBadge injury={player.injury} size={10} />
+        <SquadVariantBadges playerId={player.id} size={14} />
       </div>
       <div className="truncate text-[10px] text-on-surface-variant">{player.club}</div>
     </div>

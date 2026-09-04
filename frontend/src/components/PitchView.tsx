@@ -10,10 +10,11 @@ import {
 } from "@/lib/store";
 import { FORMATIONS, type Player, type PortalMode, type Position } from "@/lib/types";
 import { starterSlotPositions } from "@/lib/formation";
-import { projectionPoints } from "@/lib/scoring";
+import { lastSeasonDisplayPoints, listXPoints, projectionPoints, viewDisplayPoints } from "@/lib/scoring";
 import { formatMio } from "@/lib/utils";
 import { allowDrop, clearDrag, readDragPayload, useActiveDrag, writeDragSlot } from "@/lib/dnd";
 import { InjuryBadge } from "@/components/ui/InjuryBadge";
+import { SquadVariantBadges } from "@/components/ui/SquadVariantBadges";
 
 const POSITION_FALLBACK: Record<Player["position"], { primary: string; secondary: string }> = {
   TOR: { primary: "#f5c542", secondary: "#916e18" },
@@ -176,8 +177,11 @@ function PlayerChip({
         )}
       </div>
       <div className="flex flex-col items-center">
-        <span className="max-w-[80px] truncate font-mono text-[10px] font-semibold text-on-surface">
-          {player.shortName}
+        <span className="flex max-w-[80px] items-center justify-center gap-0.5">
+          <span className="truncate font-mono text-[10px] font-semibold text-on-surface">
+            {player.shortName}
+          </span>
+          <SquadVariantBadges playerId={player.id} size={12} />
         </span>
         <span className="font-mono text-[9px] text-on-surface-variant">
           {formatMio(player.marketValue)}
@@ -216,9 +220,13 @@ export function PitchView() {
     return projectionPoints(player.position, projection);
   };
   const pointsFor = (player: Player) =>
-    pointsView === "saison" ? player.pointsLastSeason ?? 0 : projectionPointsFor(player);
+    viewDisplayPoints(
+      lastSeasonDisplayPoints(player),
+      projectionPointsFor(player) || listXPoints(tab, player),
+      pointsView
+    );
   const deltaFor = (player: Player) =>
-    projectionPointsFor(player) - (player.pointsLastSeason ?? 0);
+    projectionPointsFor(player) - lastSeasonDisplayPoints(player);
 
   const starters = tab.starters.map(resolve);
   const starterPositions = starterSlotPositions(tab.formation);
